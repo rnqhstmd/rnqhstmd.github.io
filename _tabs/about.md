@@ -1,12 +1,18 @@
 ---
-layout: default
 title: About
+icon: fas fa-info-circle
+order: 4
 ---
 
-## About
+## 구본승
 
 명지대학교 졸업 · Backend Developer
 
 Java와 Spring Boot 기반의 서버 개발을 주로 하고 있습니다. 클린 아키텍처와 DDD로 도메인 로직을 인프라에서 분리하는 설계를 선호하고, 외부 API 연동, 비동기 처리, 캐싱 전략 같은 실제 서비스에서 부딪히는 문제를 깔끔하게 풀어내는 걸 좋아합니다.
 
 최근에는 Claude Code를 활용한 AI 기반 개발 워크플로우에 깊이 빠져 있습니다. LLM이 개발 프로세스의 각 단계를 어떻게 자동화할 수 있는지 탐구하고 있고, 그 결과물로 [ttutak](https://github.com/rnqhstmd/ttutak) 플러그인을 직접 만들었습니다.
+
+---
+
+- [GitHub](https://github.com/rnqhstmd)
+- [Email](mailto:bonseung9134@gmail.com)

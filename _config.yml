@@ -2,24 +2,30 @@ title: 구본승의 기술 블로그
 description: Backend, AI 개발 자동화, 하네스 엔지니어링에 대한 기록
 url: "https://rnqhstmd.github.io"
 
-remote_theme: samarsault/plainwhite-jekyll
+remote_theme: cotes2020/jekyll-theme-chirpy
 plugins:
   - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
 
 markdown: kramdown
 highlighter: rouge
 permalink: /:year/:month/:day/:title/
 
-plainwhite:
+theme_mode: dark
+
+avatar: ""
+
+social:
   name: 구본승
-  tagline: Backend Developer
-  sitemap: true
-  search: true
-  dark_mode: true
-  portfolio_image: ""
-  social_links:
-    github: rnqhstmd
-    email: bonseung9134@gmail.com
+  email: bonseung9134@gmail.com
+  links:
+    - https://github.com/rnqhstmd
+
+github:
+  username: rnqhstmd
+
+toc: true
 
 defaults:
   - scope:
@@ -27,3 +33,5 @@ defaults:
       type: "posts"
     values:
       layout: "post"
+      toc: true
+      comments: false
