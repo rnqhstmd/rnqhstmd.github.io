@@ -99,7 +99,7 @@ public void copyYesterdayRanking() {
 핵심 아이디어는 전날 점수의 일부(10%)를 오늘로 이월하는 겁니다. 당일 활동이 쌓이면 이월 점수의 영향이 자연스럽게 줄어듭니다.
 
 ```java
-@Scheduled(cron = "50 23 * * *") // 매일 23:50
+@Scheduled(cron = "0 50 23 * * *") // 매일 23:50
 public void carryOverScore() {
     String todayKey = getDailyKey();
     String tomorrowKey = "ranking:daily:" + LocalDate.now().plusDays(1)
@@ -111,6 +111,11 @@ public void carryOverScore() {
 
     if (topProducts != null) {
         for (TypedTuple<String> tuple : topProducts) {
+            // 이미 오늘 활동이 있는 상품은 이월 점수로 덮어쓰지 않습니다 (멱등성 보장)
+            Double existingScore = redisTemplate.opsForZSet().score(tomorrowKey, tuple.getValue());
+            if (existingScore != null) {
+                continue;
+            }
             double carryOverScore = tuple.getScore() * 0.1;
             redisTemplate.opsForZSet().add(
                 tomorrowKey,

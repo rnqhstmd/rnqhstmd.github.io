@@ -94,8 +94,11 @@ VO로 추출하면:
 // 변경 후
 @Embeddable
 public class OrderItemPrice {
-    private final Money price;
-    private final int quantity;
+    private Money price;
+    private int quantity;
+
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    protected OrderItemPrice() {}
 
     public OrderItemPrice(Money price, int quantity) {
         if (quantity <= 0) {
@@ -112,12 +115,21 @@ public class OrderItemPrice {
 
 @Embeddable
 public class OrderTotalAmount {
-    private final Money amount;
+    private Money amount;
+
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    protected OrderTotalAmount() {}
 
     public OrderTotalAmount(List<OrderItemPrice> items) {
         this.amount = items.stream()
             .map(OrderItemPrice::calculateSubtotal)
             .reduce(new Money(0), Money::add);
+    }
+
+    // JPA @Embeddable 클래스는 기본 생성자가 필요하므로 final 필드를 사용할 수 없습니다.
+    // Money 타입을 받는 private 생성자를 통해 내부 변환을 처리합니다.
+    private OrderTotalAmount(Money amount) {
+        this.amount = amount;
     }
 
     public OrderTotalAmount applyDiscount(Money discountAmount) {
@@ -142,7 +154,7 @@ public class Order {
 
 ## 무엇이 달라졌나
 
-**버그 원천 차단:** 음수 금액은 `Money` 생성 시점에 차단됩니다. 이전에는 연산 결과를 확인해야 했습니다.
+**버그 원천 차단:** 음수 금액은 `Money` 객체 생성 시점에 차단됩니다. 이전에는 연산 결과를 확인해야 했습니다.
 
 **테스트 용이성:** `Money`, `OrderItemPrice` 같은 VO는 독립적으로 테스트할 수 있습니다. 의존성이 없습니다.
 

@@ -150,7 +150,7 @@ public class OrderFacade {
 
 낙관적 락은 예외가 발생했을 때 처리 전략이 필요합니다.
 
-쿠폰의 경우, 이미 사용된 쿠폰이라는 의미이므로 재시도가 아닌 명확한 에러 응답을 주는 게 맞습니다.
+쿠폰의 경우, 두 트랜잭션이 동시에 같은 쿠폰을 사용하려 하면 하나는 버전 충돌(`OptimisticLockingFailureException`)로 실패합니다. 재시도하더라도 쿠폰은 이미 사용된 상태이므로 재시도가 아닌 명확한 에러 응답을 주는 게 맞습니다.
 
 ```java
 @ExceptionHandler(OptimisticLockingFailureException.class)

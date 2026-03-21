@@ -71,7 +71,7 @@ Client          OrderFacade      ProductService   CouponService   PointService  
   |                 |<--discountAmount-----------------|               |               |
   |                 |--deduct(userId, point)-------------------------->|               |
   |                 |<--ok--------------------------------------------|               |
-  |                 |--create(cmd, discount)--------------------------------->         |
+  |                 |--create(cmd, discount)----------------------------------------->|
   |                 |<--OrderResult---------------------------------------------------|
   |<--OrderResult---|
 ```
