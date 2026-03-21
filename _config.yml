@@ -2,9 +2,8 @@ title: 구본승의 기술 블로그
 description: Backend, AI 개발 자동화, 하네스 엔지니어링에 대한 기록
 url: "https://rnqhstmd.github.io"
 
-remote_theme: cotes2020/jekyll-theme-chirpy
+theme: jekyll-theme-chirpy
 plugins:
-  - jekyll-remote-theme
   - jekyll-seo-tag
   - jekyll-sitemap
 
