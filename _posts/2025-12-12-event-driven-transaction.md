@@ -1,0 +1,184 @@
+---
+layout: post
+title: "무거운 트랜잭션, 이벤트로 가볍게 만들기"
+date: 2025-12-12
+categories: [spring, architecture]
+---
+
+## 2.8초짜리 트랜잭션
+
+주문 생성 API의 응답 시간을 측정했더니 2.8초가 나왔다. 트랜잭션 안에서 일어나는 일들을 나열해봤다.
+
+```
+주문 생성 트랜잭션 (2.8초)
+├── 재고 차감 (150ms) - 핵심 비즈니스
+├── 주문 생성 (100ms) - 핵심 비즈니스
+├── 쿠폰 사용 처리 (200ms) - 부가 작업
+├── 결제 데이터 전송 (2000ms) - 외부 시스템 호출
+└── 데이터 웨어하우스 전송 (350ms) - 분석용 부가 작업
+```
+
+대부분의 시간을 외부 시스템 호출과 부가 작업이 차지하고 있었다. 핵심 작업(재고 + 주문)은 250ms다.
+
+## 핵심과 부가를 분리하는 기준
+
+모든 작업이 같은 트랜잭션에 있을 필요가 없다. 분리 기준을 정했다.
+
+**동기로 처리해야 하는 것 (핵심):**
+- 재고 차감 - 즉시 반영이 필요하다
+- 주문 생성 - 주문 결과를 응답해야 한다
+
+**비동기로 처리해도 되는 것 (부가):**
+- 쿠폰 사용 처리 - 주문 성공 후 처리해도 된다
+- 결제 데이터 전송 - 외부 시스템이 잠깐 늦어도 된다
+- 데이터 웨어하우스 전송 - 분석 데이터는 약간의 지연이 허용된다
+
+## Spring ApplicationEvent로 비동기 분리
+
+```java
+// 주문 생성 완료 이벤트
+public class OrderCreatedEvent {
+    private final Long orderId;
+    private final Long userId;
+    private final Long couponId;
+    private final PaymentData paymentData;
+
+    // constructor, getters
+}
+```
+
+```java
+@Service
+@RequiredArgsConstructor
+public class OrderFacade {
+
+    private final ProductService productService;
+    private final OrderService orderService;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Transactional
+    public OrderResult order(OrderCommand command) {
+        // 핵심: 재고 차감 + 주문 생성 (동기)
+        productService.deductStock(command.getProductId(), command.getQuantity());
+        Order order = orderService.create(command);
+
+        // 이벤트 발행 (트랜잭션 커밋 후 처리)
+        eventPublisher.publishEvent(new OrderCreatedEvent(
+            order.getId(),
+            command.getUserId(),
+            command.getCouponId(),
+            command.getPaymentData()
+        ));
+
+        return OrderResult.from(order);
+    }
+}
+```
+
+```java
+@Component
+@RequiredArgsConstructor
+public class OrderEventHandler {
+
+    private final CouponService couponService;
+    private final DataWarehouseClient dataWarehouseClient;
+    private final PaymentDataClient paymentDataClient;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleOrderCreated(OrderCreatedEvent event) {
+        // 쿠폰 처리 (별도 트랜잭션)
+        if (event.getCouponId() != null) {
+            couponService.markAsUsed(event.getCouponId());
+        }
+
+        // 결제 데이터 전송
+        paymentDataClient.send(event.getPaymentData());
+
+        // 데이터 웨어하우스 전송
+        dataWarehouseClient.send(event.getOrderId());
+    }
+}
+```
+
+`@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` 는 트랜잭션이 커밋된 후에만 이벤트를 처리한다. 주문이 롤백됐는데 쿠폰이 처리되는 불상사를 막는다.
+
+`@Async`는 별도 스레드에서 비동기로 처리한다. `@EnableAsync`를 설정 클래스에 추가해야 한다.
+
+## 별도 트랜잭션 처리
+
+이벤트 핸들러는 새로운 트랜잭션에서 동작해야 한다.
+
+```java
+@Service
+@RequiredArgsConstructor
+public class CouponService {
+
+    private final CouponRepository couponRepository;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markAsUsed(Long couponId) {
+        Coupon coupon = couponRepository.findById(couponId)
+            .orElseThrow();
+        coupon.use();
+    }
+}
+```
+
+`REQUIRES_NEW`를 쓰면 기존 트랜잭션과 분리된 새 트랜잭션에서 실행된다. 쿠폰 처리가 실패해도 주문은 이미 커밋됐으므로 영향받지 않는다.
+
+## 좋아요 기능에도 적용
+
+상품 좋아요 기능에서도 락 경합 문제가 있었다. 좋아요를 누를 때마다 `product` 테이블의 `like_count`를 업데이트하는데, 동시 요청이 많으면 락 경합이 발생했다.
+
+```java
+// Before: 매 요청마다 직접 업데이트
+@Transactional
+public void like(Long userId, Long productId) {
+    productLikeRepository.save(new ProductLike(userId, productId));
+
+    // 이 업데이트가 락 경합 유발
+    Product product = productRepository.findByIdWithLock(productId);
+    product.increaseLikeCount();
+}
+```
+
+이벤트로 분리:
+
+```java
+@Transactional
+public void like(Long userId, Long productId) {
+    productLikeRepository.save(new ProductLike(userId, productId));
+    eventPublisher.publishEvent(new ProductLikedEvent(productId));
+}
+
+@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+@Async
+public void handleProductLiked(ProductLikedEvent event) {
+    // 비동기로 처리하거나, 배치로 집계
+    productService.incrementLikeCount(event.getProductId());
+}
+```
+
+좋아요 저장과 카운트 업데이트를 분리해서 락 경합을 줄였다.
+
+## 개선 결과
+
+```
+Before: 주문 생성 응답 시간 = 2.8초
+After:  주문 생성 응답 시간 = 280ms (재고 + 주문만 동기 처리)
+```
+
+약 10배 개선이다.
+
+## 한계: 이 방식의 문제점
+
+그런데 이 구조에는 한계가 있다.
+
+**이벤트 유실:** 애플리케이션이 이벤트를 발행하고 처리하기 전에 재시작되면 이벤트가 사라진다. `ApplicationEvent`는 메모리 내 이벤트이기 때문이다.
+
+**순서 보장 불가:** 여러 이벤트 핸들러가 병렬로 실행되면 순서가 보장되지 않는다.
+
+**재시도 없음:** 핸들러가 실패하면 이벤트가 손실된다.
+
+이 한계들을 해결하려면 메시지 브로커가 필요하다. 다음 단계는 Kafka 도입이다.

@@ -1,0 +1,19 @@
+title: 구본승의 기술 블로그
+description: Backend, AI 개발 자동화, 하네스 엔지니어링에 대한 기록
+url: "https://rnqhstmd.github.io"
+author: 구본승
+
+remote_theme: pages-themes/midnight@v0.2.0
+plugins:
+  - jekyll-remote-theme
+
+markdown: kramdown
+highlighter: rouge
+permalink: /:year/:month/:day/:title/
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
