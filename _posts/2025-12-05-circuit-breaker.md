@@ -7,15 +7,15 @@ categories: [spring, architecture]
 
 ## 문제: PG 장애가 전체 주문을 멈추게 한다
 
-PG(Payment Gateway) 시스템이 간헐적으로 응답이 느려지는 상황이 발생했다. 결과는 예상보다 심각했다. PG 응답을 기다리는 스레드들이 쌓이면서 전체 주문 API가 응답 불능 상태가 됐다.
+PG(Payment Gateway) 시스템이 간헐적으로 응답이 느려지는 상황이 발생했습니다. 결과는 예상보다 심각했습니다. PG 응답을 기다리는 스레드들이 쌓이면서 전체 주문 API가 응답 불능 상태가 됐습니다.
 
-PG 하나의 장애가 주문 서비스 전체를 마비시켰다.
+PG 하나의 장애가 주문 서비스 전체를 마비시켰습니다.
 
 ## 단계적 해결: Timeout → Retry → Circuit Breaker
 
 ### 1단계: Timeout
 
-일단 무한정 기다리지 않도록 타임아웃을 설정했다.
+일단 무한정 기다리지 않도록 타임아웃을 설정했습니다.
 
 ```java
 @FeignClient(name = "pg-client", configuration = PgClientConfig.class)
@@ -39,11 +39,11 @@ public class PgClientConfig {
 }
 ```
 
-이제 3초 이상 기다리지 않는다. 그런데 3초씩 실패하는 요청들이 쌓이면 여전히 느리다.
+이제 3초 이상 기다리지 않습니다. 그런데 3초씩 실패하는 요청들이 쌓이면 여전히 느립니다.
 
 ### 2단계: Retry
 
-일시적인 장애라면 재시도로 해결될 수 있다.
+일시적인 장애라면 재시도로 해결될 수 있습니다.
 
 ```java
 @Configuration
@@ -60,18 +60,18 @@ public class RetryConfig {
 }
 ```
 
-그런데 여기서 함정이 있다. **PG 시스템이 이미 결제를 처리했는데 응답만 늦은 경우**, 재시도를 하면 중복 결제가 발생할 수 있다.
+그런데 여기서 함정이 있습니다. **PG 시스템이 이미 결제를 처리했는데 응답만 늦은 경우**, 재시도를 하면 중복 결제가 발생할 수 있습니다.
 
-재시도는 멱등성이 보장되는 경우에만 안전하다.
+재시도는 멱등성이 보장되는 경우에만 안전합니다.
 
 ### 3단계: Circuit Breaker
 
-재시도로도 해결되지 않는 상황, 즉 PG 시스템이 완전히 다운된 경우에는 Circuit Breaker가 필요하다.
+재시도로도 해결되지 않는 상황, 즉 PG 시스템이 완전히 다운된 경우에는 Circuit Breaker가 필요합니다.
 
 Circuit Breaker의 상태:
-- **CLOSED**: 정상 동작. 요청이 그대로 전달된다.
-- **OPEN**: 장애 감지. 요청을 차단하고 즉시 Fallback을 반환한다.
-- **HALF_OPEN**: 일부 요청을 통과시켜 복구 여부를 확인한다.
+- **CLOSED**: 정상 동작. 요청이 그대로 전달됩니다.
+- **OPEN**: 장애 감지. 요청을 차단하고 즉시 Fallback을 반환합니다.
+- **HALF_OPEN**: 일부 요청을 통과시켜 복구 여부를 확인합니다.
 
 ```java
 // application.yml
@@ -109,11 +109,11 @@ public class PaymentService {
 }
 ```
 
-Circuit Breaker가 OPEN 상태가 되면, PG에 요청하지 않고 즉시 Fallback을 반환한다. 응답 시간이 3초 → 50ms로 줄었다.
+Circuit Breaker가 OPEN 상태가 되면, PG에 요청하지 않고 즉시 Fallback을 반환합니다. 응답 시간이 3초 → 50ms로 줄었습니다.
 
 ## 타임아웃 문제: 결제는 됐는데 응답이 없다
 
-Circuit Breaker를 적용했지만 새로운 문제가 생겼다. 타임아웃으로 실패 처리됐는데, 실제로는 PG에서 결제가 완료된 경우다. 이 상태에서 재시도하면 중복 결제 위험이 있고, 재시도하지 않으면 결제는 됐는데 주문이 생성되지 않는다.
+Circuit Breaker를 적용했지만 새로운 문제가 생겼습니다. 타임아웃으로 실패 처리됐는데, 실제로는 PG에서 결제가 완료된 경우입니다. 이 상태에서 재시도하면 중복 결제 위험이 있고, 재시도하지 않으면 결제는 됐는데 주문이 생성되지 않습니다.
 
 해결책: **Reconcile 스케줄러**
 
@@ -153,7 +153,7 @@ public class PaymentReconcileScheduler {
 
 ## Retry와 Circuit Breaker 조합 시 함정
 
-Resilience4j에서 Retry와 Circuit Breaker를 함께 쓸 때 **순서가 중요하다**.
+Resilience4j에서 Retry와 Circuit Breaker를 함께 쓸 때 **순서가 중요합니다**.
 
 ```java
 // 잘못된 순서: CircuitBreaker가 Retry를 감싸야 한다
@@ -179,11 +179,11 @@ public PaymentResponse pay(PaymentRequest request) { ... }
 
 ## 정리
 
-장애는 전파된다. Circuit Breaker는 장애를 격리해 전파를 막는다.
+장애는 전파됩니다. Circuit Breaker는 장애를 격리해 전파를 막습니다.
 
-- **Timeout**: 무한 대기를 방지한다
-- **Retry**: 일시적 장애를 흡수한다 (멱등성 주의)
-- **Circuit Breaker**: 지속적 장애에서 빠른 Fallback을 제공한다
-- **Reconcile**: 타임아웃으로 인한 데이터 불일치를 해소한다
+- **Timeout**: 무한 대기를 방지합니다
+- **Retry**: 일시적 장애를 흡수합니다 (멱등성 주의)
+- **Circuit Breaker**: 지속적 장애에서 빠른 Fallback을 제공합니다
+- **Reconcile**: 타임아웃으로 인한 데이터 불일치를 해소합니다
 
-각각이 해결하는 문제가 다르다. 조합하되, 순서를 이해하고 사용해야 한다.
+각각이 해결하는 문제가 다릅니다. 조합하되, 순서를 이해하고 사용해야 합니다.
