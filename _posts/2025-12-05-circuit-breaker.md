@@ -73,8 +73,8 @@ Circuit Breaker의 상태:
 - **OPEN**: 장애 감지. 요청을 차단하고 즉시 Fallback을 반환합니다.
 - **HALF_OPEN**: 일부 요청을 통과시켜 복구 여부를 확인합니다.
 
-```java
-// application.yml
+```yaml
+# application.yml
 resilience4j:
   circuitbreaker:
     instances:

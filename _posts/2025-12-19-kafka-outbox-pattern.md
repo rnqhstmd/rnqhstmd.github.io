@@ -102,12 +102,17 @@ public class OutboxPublisher {
 
         for (OutboxEvent event : pendingEvents) {
             try {
-                // 동기 전송 (.get()으로 결과 대기)
-                kafkaTemplate.send(
+                // ProducerRecord에 eventId 헤더를 추가해 Consumer가 멱등성 체크에 활용합니다
+                ProducerRecord<String, String> record = new ProducerRecord<>(
                     event.getEventType().toLowerCase(),
                     String.valueOf(event.getAggregateId()),
                     event.getPayload()
-                ).get(); // 발행 성공 확인
+                );
+                record.headers().add("eventId",
+                    String.valueOf(event.getId()).getBytes(StandardCharsets.UTF_8));
+
+                // 동기 전송 (.get()으로 결과 대기)
+                kafkaTemplate.send(record).get(); // 발행 성공 확인
 
                 event.markAsPublished();
                 outboxRepository.save(event);

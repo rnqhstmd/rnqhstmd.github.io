@@ -87,16 +87,28 @@ public class OrderEventHandler {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleOrderCreated(OrderCreatedEvent event) {
-        // 쿠폰 처리 (별도 트랜잭션)
+        // 쿠폰 처리 (별도 트랜잭션) - 실패해도 다음 작업은 계속 진행합니다
         if (event.getCouponId() != null) {
-            couponService.markAsUsed(event.getCouponId());
+            try {
+                couponService.markAsUsed(event.getCouponId());
+            } catch (Exception e) {
+                log.error("쿠폰 처리 실패: couponId={}", event.getCouponId(), e);
+            }
         }
 
         // 결제 데이터 전송
-        paymentDataClient.send(event.getPaymentData());
+        try {
+            paymentDataClient.send(event.getPaymentData());
+        } catch (Exception e) {
+            log.error("결제 데이터 전송 실패: orderId={}", event.getOrderId(), e);
+        }
 
         // 데이터 웨어하우스 전송
-        dataWarehouseClient.send(event.getOrderId());
+        try {
+            dataWarehouseClient.send(event.getOrderId());
+        } catch (Exception e) {
+            log.error("데이터 웨어하우스 전송 실패: orderId={}", event.getOrderId(), e);
+        }
     }
 }
 ```
@@ -116,7 +128,7 @@ public class CouponService {
 
     private final CouponRepository couponRepository;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void markAsUsed(Long couponId) {
         Coupon coupon = couponRepository.findById(couponId)
             .orElseThrow();
@@ -125,7 +137,7 @@ public class CouponService {
 }
 ```
 
-`REQUIRES_NEW`를 쓰면 기존 트랜잭션과 분리된 새 트랜잭션에서 실행됩니다. 쿠폰 처리가 실패해도 주문은 이미 커밋됐으므로 영향받지 않습니다.
+`@Async` 핸들러는 별도 스레드에서 실행되므로 기존 트랜잭션 컨텍스트가 전파되지 않습니다. 따라서 `REQUIRES_NEW`가 아닌 기본 `@Transactional`만으로도 새 트랜잭션이 생성됩니다. 동기 이벤트 핸들러(`@Async` 없이)에서 기존 트랜잭션과 완전히 분리된 새 트랜잭션이 필요한 경우에는 `REQUIRES_NEW`가 필요합니다. 쿠폰 처리가 실패해도 주문은 이미 커밋됐으므로 영향받지 않습니다.
 
 ## 좋아요 기능에도 적용
 

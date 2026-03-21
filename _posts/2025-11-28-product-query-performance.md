@@ -68,6 +68,8 @@ CREATE INDEX idx_brand_price ON product(brand, price);
 
 ```sql
 -- 인덱스 없이 강제 실행 (IGNORE INDEX)
+-- 참고: SQL_NO_CACHE는 MySQL 5.7 이하에서 사용합니다.
+-- MySQL 8.0 이상에서는 Query Cache가 제거되어 이 힌트가 불필요합니다.
 SELECT SQL_NO_CACHE *
 FROM product IGNORE INDEX (idx_brand_price)
 WHERE brand = 'Nike'
@@ -210,7 +212,26 @@ public class ProductService {
 }
 ```
 
-패턴 기반 키 삭제는 `KEYS` 명령어를 사용하므로 프로덕션에서는 주의가 필요합니다. 큰 규모라면 `SCAN` 명령어를 활용하거나, 캐시 키 구조를 변경해 태그 기반 무효화를 고려해야 합니다.
+`KEYS` 명령어는 Redis의 모든 키를 순회하므로 데이터가 많은 프로덕션 환경에서는 블로킹이 발생할 수 있습니다. 프로덕션에서는 `SCAN` 명령을 사용해야 합니다.
+
+```java
+// 프로덕션 권장: SCAN 기반 키 삭제
+private void invalidateBrandCache(String brand) {
+    String pattern = "products:brand:" + brand + ":*";
+    ScanOptions options = ScanOptions.scanOptions().match(pattern).count(100).build();
+
+    try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory()
+            .getConnection().scan(options)) {
+        List<String> keys = new ArrayList<>();
+        cursor.forEachRemaining(key -> keys.add(new String(key)));
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+    }
+}
+```
+
+`SCAN`은 커서 기반으로 동작해 한 번에 일부 키만 처리하므로 블로킹 없이 안전하게 패턴 삭제가 가능합니다. 큰 규모라면 캐시 키 구조를 변경해 태그 기반 무효화도 고려할 수 있습니다.
 
 ## 정리
 
