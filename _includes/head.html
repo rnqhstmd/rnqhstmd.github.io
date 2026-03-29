@@ -1,0 +1,55 @@
+<!-- Topbar theme toggle button -->
+<style>
+  #topbar-theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.25rem;
+    transition: color 0.2s;
+  }
+  #topbar-theme-toggle:hover {
+    color: var(--text-color, #fff);
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Find the search trigger button in topbar
+    var searchBtn = document.getElementById('search-trigger');
+    if (!searchBtn) return;
+
+    // Create a new toggle button for topbar
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'topbar-theme-toggle';
+    btn.setAttribute('aria-label', 'Switch Mode');
+
+    // Set icon based on current theme
+    function updateIcon() {
+      var isDark = document.documentElement.getAttribute('data-mode') === 'dark'
+        || (!document.documentElement.getAttribute('data-mode')
+            && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      btn.innerHTML = isDark
+        ? '<i class="fas fa-sun"></i>'
+        : '<i class="fas fa-moon"></i>';
+    }
+    updateIcon();
+
+    // Click: delegate to the original sidebar toggle
+    btn.addEventListener('click', function() {
+      var original = document.getElementById('mode-toggle');
+      if (original) original.click();
+      setTimeout(updateIcon, 50);
+    });
+
+    // Watch for theme changes
+    new MutationObserver(updateIcon).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['data-mode']
+    });
+
+    // Insert next to search button
+    searchBtn.parentNode.insertBefore(btn, searchBtn);
+  });
+</script>
