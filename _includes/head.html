@@ -16,19 +16,16 @@
 </style>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Find the search trigger button in topbar
-    var searchBtn = document.getElementById('search-trigger');
+    const searchBtn = document.getElementById('search-trigger');
     if (!searchBtn) return;
 
-    // Create a new toggle button for topbar
-    var btn = document.createElement('button');
+    const btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'topbar-theme-toggle';
     btn.setAttribute('aria-label', 'Switch Mode');
 
-    // Set icon based on current theme
     function updateIcon() {
-      var isDark = document.documentElement.getAttribute('data-mode') === 'dark'
+      const isDark = document.documentElement.getAttribute('data-mode') === 'dark'
         || (!document.documentElement.getAttribute('data-mode')
             && window.matchMedia('(prefers-color-scheme: dark)').matches);
       btn.innerHTML = isDark
@@ -37,19 +34,15 @@
     }
     updateIcon();
 
-    // Click: delegate to the original sidebar toggle
     btn.addEventListener('click', function() {
-      var original = document.getElementById('mode-toggle');
+      const original = document.getElementById('mode-toggle');
       if (original) original.click();
-      setTimeout(updateIcon, 50);
     });
 
-    // Watch for theme changes
     new MutationObserver(updateIcon).observe(document.documentElement, {
       attributes: true, attributeFilter: ['data-mode']
     });
 
-    // Insert next to search button
     searchBtn.parentNode.insertBefore(btn, searchBtn);
   });
 </script>
