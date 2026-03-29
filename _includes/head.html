@@ -1,0 +1,48 @@
+<!-- Topbar theme toggle button -->
+<style>
+  #topbar-theme-toggle {
+    background: none;
+    border: none;
+    color: var(--text-muted-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.25rem;
+    transition: color 0.2s;
+  }
+  #topbar-theme-toggle:hover {
+    color: var(--text-color, #fff);
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchBtn = document.getElementById('search-trigger');
+    if (!searchBtn) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'topbar-theme-toggle';
+    btn.setAttribute('aria-label', 'Switch Mode');
+
+    function updateIcon() {
+      const isDark = document.documentElement.getAttribute('data-mode') === 'dark'
+        || (!document.documentElement.getAttribute('data-mode')
+            && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      btn.innerHTML = isDark
+        ? '<i class="fas fa-sun"></i>'
+        : '<i class="fas fa-moon"></i>';
+    }
+    updateIcon();
+
+    btn.addEventListener('click', function() {
+      const original = document.getElementById('mode-toggle');
+      if (original) original.click();
+    });
+
+    new MutationObserver(updateIcon).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['data-mode']
+    });
+
+    searchBtn.parentNode.insertBefore(btn, searchBtn);
+  });
+</script>
