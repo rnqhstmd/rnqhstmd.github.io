@@ -1,0 +1,19 @@
+{
+  "name": "구본승",
+  "short_name": "구본승",
+  "icons": [
+    {
+      "src": "/assets/img/favicons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/img/favicons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#1b1b1e",
+  "background_color": "#1b1b1e",
+  "display": "standalone"
+}
