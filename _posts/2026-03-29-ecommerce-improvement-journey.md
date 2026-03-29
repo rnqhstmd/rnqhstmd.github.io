@@ -440,10 +440,10 @@ private Point updatePointAndLog(String userId, Long amount, PointHistoryType typ
 
 ### Facade 패턴 — 왜 레이어를 하나 더 뒀는가
 
-```
-Interface Layer  → Controller, DTO
-Application Layer → Facade, Command, Info
-Domain Layer     → Entity, Service, Repository(인터페이스)
+Interface Layer  → Controller, DTO (HTTP 요청 처리)
+Application Layer → Facade, Command, Info (애플리케이션 비즈니스)
+Domain Layer     → Entity, Service, Repository(인터페이스) (핵심 도메인 로직)
+Infrastructure   → RepositoryImpl, JpaRepository (데이터 및 외부 연동)
 Infrastructure   → RepositoryImpl, JpaRepository
 ```
 
