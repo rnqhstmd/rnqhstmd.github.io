@@ -20,6 +20,7 @@ Java와 Spring Boot 기반의 서버 개발을 주로 하고 있습니다. 클�
 |---------|------|------|
 | **ttutak** | "개발해줘" 한마디면 PRD, 설계, 구현, 리뷰, 테스트, PR까지 처리하는 Claude Code 개발 자동화 플러그인 | [GitHub](https://github.com/rnqhstmd/ttutak) |
 | **tddak** | TDD를 강제하는 Claude Code 개발 파이프라인 — 실패 테스트 없이 코드 없고, 실행 증거 없이 완료 없다 | [GitHub](https://github.com/rnqhstmd/tddak) |
+| **wherewego** | 커플의 장소 기억을 함께 모으고 발견하는 글로벌 데이트 지도 앱 — 카카오톡 챗봇에 인스타 릴스를 공유하는 것만으로 AI가 장소를 자동 추출해 Mapbox 3D 지구본 위에 핀을 꽂아줍니다 | [GitHub](https://github.com/rnqhstmd/wherewego) |
 | **mohashim** | 감자 캐릭터 '모하'가 집중력을 지켜봐 주는 Mac/Windows 생산성 앱 (Tauri v2) | [GitHub](https://github.com/rnqhstmd/mohashim) |
 
 ---
